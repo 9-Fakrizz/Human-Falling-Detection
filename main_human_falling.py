@@ -8,7 +8,7 @@ from pydantic import BaseModel      # This is a base class for creating models
 #This code below is the LINE Notificate function.
 def send_line_notify(message, image_path):
     url = "https://notify-api.line.me/api/notify"
-    token = "PxOmKMhv4eNST4tacpYl1yQ8GqczL1tVQTa04lWBa55"  # Replace with your Line Notify token
+    token = "PxOmKihu9ghjvtd68yguoiohihpujopj999"  # Replace with your Line Notify token
     headers = {"Authorization": "Bearer " + token}
 
     payload = {"message": message}
