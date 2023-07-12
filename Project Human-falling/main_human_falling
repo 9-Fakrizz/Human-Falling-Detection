@@ -46,7 +46,7 @@ video_path = 0
 cap = cv2.VideoCapture(video_path)
 
 frame_time = 0 
-delay_frame = 5
+delay_frame = 5 # you can custom delay here
 
 while cap.isOpened():
     success, frame = cap.read()     
