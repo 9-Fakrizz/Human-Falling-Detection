@@ -1,0 +1,38 @@
+
+import pandas as pd
+import datetime
+import pytz
+import os
+
+desired_timezone = pytz.timezone('Asia/Bangkok')
+current_time = datetime.datetime.now(desired_timezone)
+
+def remove_excel_file(file_path):
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+s = 'falling'
+t = str(current_time.strftime("%H:%M:%S"))
+d = str(current_time.date())
+
+data ={"Event":[s],"Date":[d], "Time":[t]}
+df = pd.DataFrame(data)
+excel_file = ("data_{}.xlsx".format(current_time.date()))
+
+if os.path.exists(excel_file):
+   
+   df_existing = pd.read_excel(excel_file,engine='openpyxl')
+   df_appended = df_existing._append(df, ignore_index=True)
+   df_appended.to_excel(excel_file, index=False, engine='openpyxl')
+   
+else :
+    writer = pd.ExcelWriter(excel_file, engine='openpyxl')
+    df.to_excel(writer, sheet_name='Sheet1', index=False)
+    writer._save()
+
+#remove_excel_file(excel_file)
+

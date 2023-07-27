@@ -1,0 +1,52 @@
+import smtplib
+from pathlib import Path
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email.utils import COMMASPACE, formatdate
+from email import encoders
+
+####################################################################################
+# "IMPORTANT: WHEN SENDING EMAILS FROM GMAI ENSURE THAT YOU HAVE ENABLED LESS SECURE APPS "
+send_from =  "DLA"
+send_to = "forproject0858@gmail.com"
+subject = "SUBJECT LINE"
+body = "This is body of email"
+username  =  "forproject0858@gmail.com"
+password =  "kdrkckkofjapeddm"
+attachmentPath  = ""          
+####################################################################################
+
+msg = MIMEMultipart()
+
+msg['From'] = send_from
+msg['To'] = send_to
+msg['Date'] = formatdate(localtime=True)
+msg['Subject'] = subject
+server = "smtp.gmail.com"
+port = 587
+use_tls = True
+
+msg.attach(MIMEText(body))
+#msg.attach(MIMEText(emailBody ,'html'))
+
+#### ATTACHMENT CODE ***** COMMENT OUT CODE BELOW TO EXCLUDE ATTACHMENT *******
+'''
+part = MIMEBase('application', "octet-stream")
+with open(attachmentPath, 'rb') as file:
+    part.set_payload(file.read())
+encoders.encode_base64(part)
+part.add_header('Content-Disposition',
+                'attachment; filename="{}"'.format(Path(attachmentPath).name))
+msg.attach(part)
+'''
+#### COMMENT OUT CODE ABOVE TO EXCLUDE ATTACHMENT *******
+
+smtp = smtplib.SMTP(server, port)
+if use_tls:
+    smtp.starttls()
+smtp.login(username, password)
+smtp.sendmail(send_from, send_to, msg.as_string())
+smtp.quit()
+
+print ("Message Sent")
