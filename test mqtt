@@ -1,0 +1,24 @@
+import cv2
+import paho.mqtt.client as mqtt
+import time
+
+# MQTT Broker details
+MQTT_BROKER_HOST = "192.168.1.107"
+MQTT_BROKER_PORT = 1883
+MQTT_TOPIC = "/home/falling"
+MQTT_USERNAME = "mqttbroker"
+MQTT_PASSWORD = "12345678"
+
+# Initialize MQTT client
+
+mqtt_client = mqtt.Client()
+mqtt_client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT)
+
+mqtt_client.loop_start()
+message = "Test message"
+mqtt_client.publish(MQTT_TOPIC, message)
+mqtt_client.loop_stop()
+time.sleep(2)
+
+

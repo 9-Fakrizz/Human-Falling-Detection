@@ -5,7 +5,7 @@ from ultralytics import YOLO        # This is a YOLO (You Only Look Once) object
 import numpy                        # This library provides support for multi-dimensional arrays and matrices.
 import requests                     # This library is used to send HTTP requests in Python.
 from pydantic import BaseModel      # This is a base class for creating models
-import math
+import math                             
 import pandas as pd
 import datetime
 import time
@@ -15,7 +15,18 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
+import paho.mqtt.client as mqtt
 
+
+MQTT_BROKER_HOST = "192.168.1.107"
+MQTT_BROKER_PORT = 1883
+MQTT_TOPIC = "/home/falling"
+MQTT_USERNAME = "mqttbroker"
+MQTT_PASSWORD = "12345678"
+
+mqtt_client = mqtt.Client()
+mqtt_client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT)
 
 desired_timezone = pytz.timezone('Asia/Bangkok')
 current_time = datetime.datetime.now(desired_timezone)
@@ -129,11 +140,6 @@ video_path = 0
 cap = cv2.VideoCapture(video_path)
 
 
-width = 640
-height = 480
-compression_quality = 90
-
-
 frame_time = 0   # use for count frames
 frame_time2 = 1  # use for calculate the delta theta/frame2
 delay_frame = 40 # you can custom delay here
@@ -145,23 +151,16 @@ status = True
 status_delay = 0
 status_count = 0
 
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-
 while cap.isOpened():
-    success, frame = cap.read()   
-    frame = cv2.resize(frame, (width, height))  
+    success, frame = cap.read()    
     boxes=[]
     #annotations_frame = frame
-    annotations_frame0 = frame
-    jpeg_params = [cv2.IMWRITE_JPEG_QUALITY, compression_quality]
-    _, compressed_frame = cv2.imencode('.jpg', annotations_frame0, jpeg_params)
-    annotations_frame= cv2.imdecode(compressed_frame, cv2.IMREAD_COLOR)
+    annotations_frame = frame
 
     if success:                                              # if camera-read is successfully
         result = model(annotations_frame, save=True)                     # process frame with model
         annotations_frame = result[0].plot()                 # plot keypoints lines including rectangle around object
-
+        
         for detection in result:                             # If there are persons in frame
             
             # x,y axis and width,height of object(person)
@@ -214,18 +213,6 @@ while cap.isOpened():
                                 angle = math.acos(dot_product/abs(size_l1*size_l2))
                                 angle = math.degrees(angle)
 
-                            ''''' 
-                            vector_l3 = [(center_ear[0] - center_ankle[0]), (center_ear[1] - center_ankle[1])]
-                            vector_l4 =[1-center_ankle[0],0 ]
-
-                            size_l3 = math.sqrt(pow( vector_l3[0], 2) + pow(vector_l3[1], 2) )
-                            size_l4 = math.sqrt(pow( vector_l4[0], 2) + pow(vector_l4[1], 2) )
-                            size_l3, size_l4 = round(size_l3,5) ,round(size_l4,5)
-
-                            if (size_l3*size_l4) != 0 and abs(dot_product/abs(size_l3*size_l4)) <= 1 :
-                                fall_angle = math.acos(dot_product/abs(size_l3*size_l4))
-                                fall_angle = math.degrees(fall_angle)'''
-
 
                             cv2.putText(annotations_frame, ("Angle[{}]: ".format(i+1)) , (340, 40*(i+1)), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 0), 2)
                             cv2.putText(annotations_frame, str(round(angle,2)) , (480, 40*(i+1)), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 0), 2)
@@ -254,39 +241,24 @@ while cap.isOpened():
                                 
                                     # Send Line notification with image
                                     message = "Falling"
+                                    mqtt_client.publish(MQTT_TOPIC, message)
                                     save_exel(message)
                                     send_line_notify(message, image_path)
                                     frame_time = 0
                                     status = False
                                 
-                            '''if fall_angle >= 130 or fall_angle <=50:
-                            
-                                frame_time = frame_time +1
-                                if frame_time % delay_frame == 0 and frame_time != 0 :
-                                    print("falling............")
-                                    cv2.putText(annotations_frame, " FALLING FOUND ", (50, 450), cv2.FONT_HERSHEY_PLAIN, 2, (218, 224, 159), 2)
-                                    print("Notificate to LINE  Successfully......")
-                                    image_path = "falling_person.jpg"
-                                    cv2.imwrite(image_path, annotations_frame)
-                                    
-                                    
-                                    # Send Line notification with image
-                                    message = "Falling "
-                                    save_exel(message)
-                                    send_line_notify(message, image_path)
-                                    frame_time = 0
-                                    status = False'''
-
                 
-                            if (speed >= 6):
+                            if (speed >= 10):
                                 print("staggered.............")
                                 cv2.putText(annotations_frame, " STAGGERED ", (50, 450), cv2.FONT_HERSHEY_PLAIN, 2, (218, 224, 159), 2)
                                 print("Notificate to LINE  Successfully......")
                                 image_path = "staggered person.jpg"
                                 cv2.imwrite(image_path, annotations_frame)
                                 
+                                # Start the MQTT network loop (important for communication)
                                 message = "Staggered"
                                 save_exel(message)
+                                mqtt_client.publish(MQTT_TOPIC, message)
                                 send_line_notify(message, image_path)
                                 status = False
 
